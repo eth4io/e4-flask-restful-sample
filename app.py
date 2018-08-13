@@ -1,15 +1,18 @@
-import os
 import json
 import flask
 from flask_pymongo import PyMongo
+from flask.ext.sqlalchemy import SQLAlchemy
 from requests_oauthlib import OAuth2Session
 from credentials.config import Auth, Config, config
 from requests.exceptions import HTTPError
+from flask.ext.login import LoginManager, login_required, login_user, \
+    logout_user, current_user, UserMixin
 
 import google_auth_oauthlib.flow
 import google.oauth2.credentials
 
 app = flask.Flask(__name__)
+db = SQLAlchemy(app)
 app.config.from_object(config['dev'])
 app.config['SESSION_TYPE'] = 'mongodb'
 
@@ -27,8 +30,8 @@ def index():
 
 @app.route('/login')
 def login():
-    # if current_user.is_authenticated():
-    #     return redirect(url_for('index'))
+    if current_user.is_authenticated():
+        return flask.redirect(flask.url_for('index'))
     google = get_google_auth()
     auth_url, state = google.authorization_url(Auth.AUTH_BASE_URI, access_type='offline')
     flask.session['oauth_state'] = state
@@ -69,8 +72,18 @@ def oauth2callback_google():
         if resp.status_code == 200:
             user_data = resp.json()
             email = user_data['email']
-            print("Success: ", email)
-            return flask.redirect(flask.url_for('index'))
+            user = User.query.filter_by(email=email).first()
+            if user is None:
+                user = User()
+                user.email = email
+            user.name = user_data['name']
+            user.tokens = json.dumps(token)
+            user.avatar = user_data['picture']
+            db.session.add(user)
+            db.session.commit()
+            login_user(user)
+            return redirect(url_for('index'))
+    return 'Could not fetch your information.'
 
 
 
