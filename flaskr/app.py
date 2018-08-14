@@ -1,22 +1,20 @@
 import json
 import flask
-from flaskr.alchemy_db_helper import alchemy_db
+from flaskr.alchemy_db_helper import db
 from requests_oauthlib import OAuth2Session
 from credentials.config import Auth, config
 from requests.exceptions import HTTPError
-from flask_loginmanager import LoginManager
-from flask_login import login_user, \
-    current_user
+from flask_login import LoginManager, login_user, current_user
 from flaskr.user import User
 
 app = flask.Flask(__name__)
 app.config.from_object(config['dev'])
 with app.app_context():
-    alchemy_db.init_app(app)
-    alchemy_db.create_all()
+    db.init_app(app)
+    db.create_all()
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = "login"
+login_manager.login_view = "users.login"
 
 # app.config["MONGO_DBNAME"] = "e4flask"
 # mongo = PyMongo(app, config_prefix='MONGO')
@@ -80,8 +78,8 @@ def oauth2callback_google():
             user.email = user_data['email']
             user.tokens = json.dumps(token)
             user.avatar_url = user_data['picture']
-            alchemy_db.session.add(user)
-            alchemy_db.session.commit()
+            db.session.add(user)
+            db.session.commit()
             login_user(user)
             return flask.redirect(flask.url_for('index'))
     return 'Could not fetch your information.'

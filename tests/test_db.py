@@ -1,7 +1,7 @@
 import json
 from flask import Flask
 import unittest
-from flaskr.app import alchemy_db
+from flaskr.app import db
 from flaskr.user import User
 
 class alchemyDbTest(unittest.TestCase):
@@ -11,21 +11,21 @@ class alchemyDbTest(unittest.TestCase):
 
     def setUp(self):
         self.app = Flask(__name__)
-        alchemy_db.init_app(self.app)
+        db.init_app(self.app)
         with self.app.app_context():
-            alchemy_db.create_all()
+            db.create_all()
 
     def tearDown(self):
         self.app = Flask(__name__)
-        alchemy_db.init_app(self.app)
+        db.init_app(self.app)
         # with self.app.app_context():
         #     alchemy_db.drop_all()
 
     def testUserInsert(self):
         test_user = User(id="101", email='test@email.com', name='full name')
         with self.app.app_context():
-            alchemy_db.session.add(test_user)
-            alchemy_db.session.commit()
+            db.session.add(test_user)
+            db.session.commit()
             user = User.query.filter_by(id=101).first()
             assert(user, test_user)
 
@@ -47,5 +47,5 @@ class alchemyDbTest(unittest.TestCase):
         # user.tokens =
         user.avatar_url = user_data['picture']
         with self.app.app_context():
-            alchemy_db.session.add(user)
-            alchemy_db.session.commit()
+            db.session.add(user)
+            db.session.commit()

@@ -1,16 +1,16 @@
-from flaskr.alchemy_db_helper import alchemy_db
+from flaskr.alchemy_db_helper import db
 import datetime
 
 
-class User(alchemy_db.Model):
+class User(db.Model):
     __tablename__ = "users"
-    id = alchemy_db.Column(alchemy_db.Text, unique=True, primary_key=True)
-    email = alchemy_db.Column(alchemy_db.String(128), unique=True, nullable=False)
-    name = alchemy_db.Column(alchemy_db.String(128), nullable=True)
-    avatar_url = alchemy_db.Column(alchemy_db.String(256))
-    tokens = alchemy_db.Column(alchemy_db.Text)
-    active = alchemy_db.Column(alchemy_db.Boolean, default=True)
-    created_at = alchemy_db.Column(alchemy_db.DateTime, default=datetime.datetime.utcnow())
+    id = db.Column(db.Text, unique=True, primary_key=True)
+    email = db.Column(db.String(128), unique=True, nullable=False)
+    name = db.Column(db.String(128), nullable=True)
+    avatar_url = db.Column(db.String(256))
+    tokens = db.Column(db.Text)
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow())
 
     def __repr__(self):
         return '<User %r>' % self.email
