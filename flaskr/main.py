@@ -1,6 +1,4 @@
-from app import app
-from werkzeug.serving import make_ssl_devcert
-from OpenSSL import SSL
+from flaskr.app import app
 
 
 if __name__ == '__main__':

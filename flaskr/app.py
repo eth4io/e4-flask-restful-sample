@@ -1,25 +1,25 @@
 import json
 import flask
-from flask_pymongo import PyMongo
-from flask.ext.sqlalchemy import SQLAlchemy
+from flaskr.alchemy_db_helper import alchemy_db
 from requests_oauthlib import OAuth2Session
-from credentials.config import Auth, Config, config
+from credentials.config import Auth, config
 from requests.exceptions import HTTPError
-from flask.ext.login import LoginManager, login_required, login_user, \
-    logout_user, current_user, UserMixin
-
-import google_auth_oauthlib.flow
-import google.oauth2.credentials
+from flask_loginmanager import LoginManager
+from flask_login import login_user, \
+    current_user
+from flaskr.user import User
 
 app = flask.Flask(__name__)
-db = SQLAlchemy(app)
 app.config.from_object(config['dev'])
-app.config['SESSION_TYPE'] = 'mongodb'
+with app.app_context():
+    alchemy_db.init_app(app)
+    alchemy_db.create_all()
+login_manager = LoginManager(app)
+login_manager.login_view = "login"
+login_manager.session_protection = "strong"
 
 # app.config["MONGO_DBNAME"] = "e4flask"
 # mongo = PyMongo(app, config_prefix='MONGO')
-
-
 
 
 
@@ -55,8 +55,8 @@ def authorize():
 def oauth2callback_google():
     if 'error' in flask.request.args:
         if flask.request.args.get('error') == 'access_denied':
-            return 'You denied access.'
-        return 'Error encountered.'
+            return 'Access denied.'
+        return 'Unknown error.' + flask.request.args
     if 'code' not in flask.request.args and 'state' not in flask.request.args:
         return flask.redirect(flask.url_for('login'))
     else:
@@ -68,23 +68,28 @@ def oauth2callback_google():
                 authorization_response=flask.request.url)
         except HTTPError:
             return 'HTTPError occurred.'
-        resp = google.get(Auth.USER_INFO)
-        if resp.status_code == 200:
-            user_data = resp.json()
-            email = user_data['email']
-            user = User.query.filter_by(email=email).first()
+        response = google.get(Auth.USER_INFO)
+        if response.status_code == 200:
+            user_data = response.json()
+            user_id = user_data['id']
+            user = User.query.filter_by(id=user_id).first()
             if user is None:
                 user = User()
-                user.email = email
+                user.id = user_id
             user.name = user_data['name']
+            user.email = user_data['email']
             user.tokens = json.dumps(token)
-            user.avatar = user_data['picture']
-            db.session.add(user)
-            db.session.commit()
+            user.avatar_url = user_data['picture']
+            alchemy_db.session.add(user)
+            alchemy_db.session.commit()
             login_user(user)
-            return redirect(url_for('index'))
+            return flask.redirect(flask.url_for('index'))
     return 'Could not fetch your information.'
 
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 
 def get_google_auth(state=None, token=None):
