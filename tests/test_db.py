@@ -22,7 +22,7 @@ class alchemyDbTest(unittest.TestCase):
         #     alchemy_db.drop_all()
 
     def testUserInsert(self):
-        test_user = User(id=101, email='test@email.com', name='full name')
+        test_user = User(id="101", email='test@email.com', name='full name')
         with self.app.app_context():
             alchemy_db.session.add(test_user)
             alchemy_db.session.commit()
