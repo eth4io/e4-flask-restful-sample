@@ -4,10 +4,10 @@ from flaskr.alchemy_db_helper import db
 from requests_oauthlib import OAuth2Session
 from credentials.config import Auth, config
 from requests.exceptions import HTTPError
-from flask_login import LoginManager, login_user, current_user
+from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from flaskr.user import User
 
-app = flask.Flask(__name__)
+app = flask.Flask(__name__, template_folder='../templates')
 app.config.from_object(config['dev'])
 with app.app_context():
     db.init_app(app)
@@ -23,12 +23,12 @@ login_manager.login_view = "users.login"
 
 @app.route('/')
 def index():
-    return 'Hello World!'
+    return flask.render_template('index.html')
 
 
 @app.route('/login')
 def login():
-    if current_user.is_authenticated():
+    if current_user.is_authenticated:
         return flask.redirect(flask.url_for('index'))
     google = get_google_auth()
     auth_url, state = google.authorization_url(Auth.AUTH_BASE_URI, access_type='offline')
@@ -87,7 +87,13 @@ def oauth2callback_google():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return User.query.get(str(user_id))
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return flask.redirect(flask.url_for('index'))
 
 
 def get_google_auth(state=None, token=None):
